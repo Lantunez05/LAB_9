@@ -44,29 +44,32 @@ void __interrupt() isr(void)
 {
     if (INTCONbits.RBIF)
     {
-        if (PORTBbits.RB0 == 0 ) // Si el pin RB0 ha cambiado a bajo, entrar en modo de suspensión
+        if (PORTBbits.RB0 == 0) // Si el pin RB0 ha cambiado a bajo, entrar en modo de suspensión
         {
-            SLEEP();
-            INTCONbits.RBIF = 0; // Borrar la bandera de interrupción por cambio de estado del puerto B
+            /*SLEEP();
+            INTCONbits.RBIF = 0; // Borrar la bandera de interrupción por cambio de estado del puerto B*/
             sleep =1;
         }
         else if (PORTBbits.RB1 == 0 )
         {
-            INTCONbits.RBIF = 0; // Borrar la bandera de interrupción por cambio de estado del puerto B
+            //INTCONbits.RBIF = 0; // Borrar la bandera de interrupción por cambio de estado del puerto B
             sleep =0;
         }
         else if (PORTBbits.RB2 == 0)
         {
             write(address,pot); // Iniciar proceso de escritura
-        
+            sleep = 0;
         }    
         else if (PORTBbits.RB3 == 0) // Lectura
         {
             PORTD=0;            // Reseteo del puerto D en caso de que tenga algun dato
             data = read(address); // El valor almacenado en la direccion se pasa a la variable data
             PORTD = data;       // Representar el valor de data en el puerto D
+            sleep = 0;
         
-        }    
+            
+        }
+        INTCONbits.RBIF = 0;
     }
 }
 
@@ -84,6 +87,13 @@ void main (void){
         pot = ADRESH;
         PORTC = (char) adc;         // Mueve el valor de adc al puerto C
         __delay_ms(10);
+        
+        if (sleep ==1)
+        {
+            SLEEP();
+        
+        }
+        
     }
         
         
@@ -104,7 +114,7 @@ void setup(void)
     PORTC=0;
     PORTD=0;
     
-    OSCCONbits.IRCF =0b0110; // Oscilador de de 4MHz
+    OSCCONbits.IRCF =0b0110; // Oscilador de 4MHz
     OSCCONbits.SCS = 1;      // Oscilador interno
     
     OPTION_REGbits.nRBPU = 0;
@@ -154,5 +164,6 @@ void write (uint8_t address, uint8_t data)
     EECON2 = 0xAA;      // Secuencia de escritura
     EECON1bits.WR = 1;  // Iniciar con la escritura
     EECON1bits.WREN=0;  // Deshabilitar la escritura
-    INTCONbits.GIE = interStatus; 
+    INTCONbits.GIE = interStatus;  // Habilitar interrupciones
 }
+
